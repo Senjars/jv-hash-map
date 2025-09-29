@@ -2,50 +2,66 @@ package core.basesyntax;
 
 public class MyHashMap<K, V> implements MyMap<K, V> {
 
-    int capacity = 16;
-    int size = 0;
-    final double loadFactor = 0.75;
-    final int treshold = (int) (capacity * loadFactor);
-    Entry<K, V>[] bucket = new Entry[capacity];
+    private int capacity = 16;
+    private int size = 0;
+    private final double loadFactor = 0.75;
+    private int treshold = (int) (capacity * loadFactor);
+    private Entry<K, V>[] bucket = new Entry[capacity];
 
     @Override
-    public void put(K key, V value) { // put accepts keys and values
-        int index = Math.abs(key.hashCode() % capacity); // index equals the remainder (abs = absolute / liczba bezwzględna)
-        Entry<K,V> newEntry = new Entry<>(key, value); // creates new entries
+    public void put(K key, V value) {
+
+        Entry<K,V> newEntry = new Entry<>(key, value);
+        int index;
 
         if (size >= treshold) {
             resize();
         }
 
-        if (bucket[index] == null) { // checks whether bucket a index .. is null
-           bucket[index] = newEntry; // if it is then bucket at index becomes a new entry
+        if (key == null) {
+            index = 0;
         } else {
-            Entry<K, V> current = bucket[index]; // if bucket != null then current = bucket[index]
-            while (true) { // as long as it's true current must be current next (not null > null > null(the previous one becomes this one))
-                if (current.key.equals((key))) {
-                    current.value = value;
+            index = Math.abs(key.hashCode() % capacity);
+        }
+
+        if (bucket[index] == null) {
+            bucket[index] = newEntry;
+        } else {
+            Entry<K, V> current = bucket[index];
+            while (true) {
+                if ((current.getKey() == null && key == null)
+                        || (current.getKey() != null && current.getKey().equals(key))) {
+                    current.setValue(value);
                     return;
                 }
-                if (current.next == null) break;
-                current = current.next;
+                if (current.getNext() == null) {
+                    break;
+                }
+                current = current.getNext();
             }
-            current.next = newEntry; //now current next is a newEntry
+            current.setNext(newEntry);
         }
         size++;
     }
 
     @Override
     public V getValue(K key) {
-        int index = Math.abs(key.hashCode() % capacity);
-        Entry<K, V> current = bucket[index]; // start with the first element in the bucket
+        int index;
+        if (key == null) {
+            index = 0;
+        } else {
+            index = Math.abs(key.hashCode() % capacity);
+        }
+        Entry<K, V> current = bucket[index];
 
         while (current != null) {
-            if (current.key.equals(key)) {
-                return current.value;  // if the key was found
+            if ((current.getKey() == null && key == null)
+                    || (current.getKey() != null && current.getKey().equals(key))) {
+                return current.getValue();
             }
-            current = current.next; // next on the list
+            current = current.getNext();
         }
-        return null; // key not found so we return null
+        return null;
     }
 
     @Override
@@ -55,14 +71,15 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
 
     public void resize() {
         capacity = capacity * 2;
+        treshold = (int) (capacity * loadFactor);
         Entry<K, V>[] newBucket = new Entry[capacity];
 
         for (Entry<K, V> entry : bucket) {
             while (entry != null) {
-                Entry<K, V> nextEntry = entry.next;
+                Entry<K, V> nextEntry = entry.getNext();
 
-                int newIndex = Math.abs(entry.key.hashCode() % capacity);
-                entry.next = newBucket[newIndex];
+                int newIndex = (entry.getKey() == null ? 0 : Math.abs(entry.getKey().hashCode() % capacity));
+                entry.setNext(newBucket[newIndex]);
                 newBucket[newIndex] = entry;
 
                 entry = nextEntry;
