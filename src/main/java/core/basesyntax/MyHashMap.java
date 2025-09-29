@@ -78,7 +78,8 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
             while (entry != null) {
                 Entry<K, V> nextEntry = entry.getNext();
 
-                int newIndex = (entry.getKey() == null ? 0 : Math.abs(entry.getKey().hashCode() % capacity));
+                int newIndex = (entry.getKey() == null ? 0
+                        : Math.abs(entry.getKey().hashCode() % capacity));
                 entry.setNext(newBucket[newIndex]);
                 newBucket[newIndex] = entry;
 
