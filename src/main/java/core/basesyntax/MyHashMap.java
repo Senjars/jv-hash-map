@@ -1,65 +1,54 @@
 package core.basesyntax;
 
+import java.util.Objects;
+
 public class MyHashMap<K, V> implements MyMap<K, V> {
 
     private int capacity = 16;
     private int size = 0;
-    private final double loadFactor = 0.75;
-    private int treshold = (int) (capacity * loadFactor);
-    private Entry<K, V>[] bucket = new Entry[capacity];
+    private double loadFactor = 0.75;
+    private int threshold = (int) (capacity * loadFactor);
+    @SuppressWarnings("unchecked")
+    private Node<K, V>[] bucket = (Node<K, V>[]) new Node[capacity];
 
     @Override
     public void put(K key, V value) {
-
-        Entry<K,V> newEntry = new Entry<>(key, value);
-        int index;
-
-        if (size >= treshold) {
+        if (size >= threshold) {
             resize();
         }
 
-        if (key == null) {
-            index = 0;
-        } else {
-            index = Math.abs(key.hashCode() % capacity);
-        }
+        int index = indexForKey(key);
+        Node<K, V> newNode = new Node<>(key, value);
 
         if (bucket[index] == null) {
-            bucket[index] = newEntry;
+            bucket[index] = newNode;
         } else {
-            Entry<K, V> current = bucket[index];
+            Node<K, V> current = bucket[index];
             while (true) {
-                if ((current.getKey() == null && key == null)
-                        || (current.getKey() != null && current.getKey().equals(key))) {
-                    current.setValue(value);
+                if (Objects.equals(current.key, key)) {
+                    current.value = value;
                     return;
                 }
-                if (current.getNext() == null) {
+                if (current.next == null) {
                     break;
                 }
-                current = current.getNext();
+                current = current.next;
             }
-            current.setNext(newEntry);
+            current.next = newNode;
         }
         size++;
     }
 
     @Override
     public V getValue(K key) {
-        int index;
-        if (key == null) {
-            index = 0;
-        } else {
-            index = Math.abs(key.hashCode() % capacity);
-        }
-        Entry<K, V> current = bucket[index];
+        int index = indexForKey(key);
+        Node<K, V> current = bucket[index];
 
         while (current != null) {
-            if ((current.getKey() == null && key == null)
-                    || (current.getKey() != null && current.getKey().equals(key))) {
-                return current.getValue();
+            if (Objects.equals(current.key, key)) {
+                return current.value;
             }
-            current = current.getNext();
+            current = current.next;
         }
         return null;
     }
@@ -69,23 +58,40 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
         return size;
     }
 
-    public void resize() {
+    private void resize() {
         capacity = capacity * 2;
-        treshold = (int) (capacity * loadFactor);
-        Entry<K, V>[] newBucket = new Entry[capacity];
+        threshold = (int) (capacity * loadFactor);
 
-        for (Entry<K, V> entry : bucket) {
+        @SuppressWarnings("unchecked")
+        Node<K, V>[] newBucket = (Node<K, V>[]) new Node[capacity];
+
+        for (Node<K, V> entry : bucket) {
             while (entry != null) {
-                Entry<K, V> nextEntry = entry.getNext();
+                Node<K, V> nextEntry = entry.next;
 
-                int newIndex = (entry.getKey() == null ? 0
-                        : Math.abs(entry.getKey().hashCode() % capacity));
-                entry.setNext(newBucket[newIndex]);
+                int newIndex = indexForKey(entry.key);
+                entry.next = newBucket[newIndex];
                 newBucket[newIndex] = entry;
 
                 entry = nextEntry;
             }
         }
         bucket = newBucket;
+    }
+
+    private int indexForKey(K key) {
+        int h = (key == null) ? 0 : key.hashCode();
+        return (h & 0x7fffffff) % capacity;
+    }
+
+    private static class Node<K, V> {
+        K key;
+        V value;
+        Node<K, V> next;
+
+        Node(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
     }
 }
